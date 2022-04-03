@@ -257,6 +257,14 @@ config EFI
 	  This enables the kernel to use EFI runtime services that are
 	  available (such as the EFI variable services).
 
+config EFI_STUB
+	bool "EFI boot stub support"
+	default y
+	depends on EFI
+	help
+	  This kernel feature allows the kernel to be loaded directly by
+	  EFI firmware without the use of a bootloader.
+
 config FORCE_MAX_ZONEORDER
 	int "Maximum zone order"
 	range 14 64 if PAGE_SIZE_64KB

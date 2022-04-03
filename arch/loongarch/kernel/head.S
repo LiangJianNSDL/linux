@@ -11,10 +11,52 @@
 #include <asm/regdef.h>
 #include <asm/loongarch.h>
 #include <asm/stackframe.h>
+#include <generated/compile.h>
+#include <generated/utsrelease.h>
 
-SYM_ENTRY(_stext, SYM_L_GLOBAL, SYM_A_NONE)
+#ifdef CONFIG_EFI_STUB
+
+#include "efi-header.S"
+
+	__HEAD
+
+_head:
+	/* "MZ", MS-DOS header */
+	.word	MZ_MAGIC
+	.org	0x28
+	.ascii	"Loongson\0"
+	.org	0x3c
+	/* Offset to the PE header */
+	.long	pe_header - _head
+
+pe_header:
+	__EFI_PE_HEADER
+
+kernel_asize:
+	.long _end - _text
+
+kernel_fsize:
+	.long _edata - _text
+
+kernel_vaddr:
+	.quad VMLINUX_LOAD_ADDRESS
+
+kernel_offset:
+	.long kernel_offset - _text
+
+kernel_version:
+	.ascii  UTS_RELEASE " (" LINUX_COMPILE_BY "@" LINUX_COMPILE_HOST ") " UTS_VERSION "\0"
+
+SYM_L_GLOBAL(kernel_asize)
+SYM_L_GLOBAL(kernel_fsize)
+SYM_L_GLOBAL(kernel_vaddr)
+SYM_L_GLOBAL(kernel_offset)
+
+#endif
 
 	__REF
+
+SYM_ENTRY(_stext, SYM_L_GLOBAL, SYM_A_NONE)
 
 SYM_CODE_START(kernel_entry)			# kernel entry point
 

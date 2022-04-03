@@ -3,6 +3,14 @@
 # Author: Huacai Chen <chenhuacai@loongson.cn>
 # Copyright (C) 2020-2022 Loongson Technology Corporation Limited
 
+boot	:= arch/loongarch/boot
+
+ifndef CONFIG_EFI_STUB
+KBUILD_IMAGE	= $(boot)/vmlinux
+else
+KBUILD_IMAGE	= $(boot)/vmlinux.efi
+endif
+
 #
 # Select the object file format to substitute into the linker script.
 #
@@ -27,8 +35,6 @@ ifdef CONFIG_64BIT
 ld-emul			= $(64bit-emul)
 cflags-y		+= -mabi=lp64s
 endif
-
-all-y			:= vmlinux
 
 cflags-y			+= -G0 -pipe -msoft-float
 LDFLAGS_vmlinux			+= -G0 -static -n -nostdlib
@@ -66,6 +72,7 @@ endif
 head-y := arch/loongarch/kernel/head.o
 
 libs-y += arch/loongarch/lib/
+libs-$(CONFIG_EFI_STUB) += $(objtree)/drivers/firmware/efi/libstub/lib.a
 
 ifeq ($(KBUILD_EXTMOD),)
 prepare: vdso_prepare
@@ -77,12 +84,13 @@ PHONY += vdso_install
 vdso_install:
 	$(Q)$(MAKE) $(build)=arch/loongarch/vdso $@
 
-all:	$(all-y)
+all:	$(KBUILD_IMAGE)
 
-CLEAN_FILES += vmlinux
+$(KBUILD_IMAGE): vmlinux
+	$(Q)$(MAKE) $(build)=$(boot) $(bootvars-y) $@
 
 install:
-	$(Q)install -D -m 755 vmlinux $(INSTALL_PATH)/vmlinux-$(KERNELRELEASE)
+	$(Q)install -D -m 755 $(KBUILD_IMAGE) $(INSTALL_PATH)/vmlinux-$(KERNELRELEASE)
 	$(Q)install -D -m 644 .config $(INSTALL_PATH)/config-$(KERNELRELEASE)
 	$(Q)install -D -m 644 System.map $(INSTALL_PATH)/System.map-$(KERNELRELEASE)
 

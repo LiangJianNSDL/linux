@@ -12,6 +12,14 @@
 #define BSS_FIRST_SECTIONS *(.bss..swapper_pg_dir)
 
 #include <asm-generic/vmlinux.lds.h>
+#include "image-vars.h"
+
+/*
+ * Max avaliable Page Size is 64K, so we set SectionAlignment
+ * field of EFI application to 64K.
+ */
+PECOFF_FILE_ALIGN = 0x200;
+PECOFF_SEGMENT_ALIGN = 0x10000;
 
 OUTPUT_ARCH(loongarch)
 ENTRY(kernel_entry)
@@ -27,6 +35,9 @@ SECTIONS
 	. = VMLINUX_LOAD_ADDRESS;
 
 	_text = .;
+	HEAD_TEXT_SECTION
+
+	. = ALIGN(PECOFF_SEGMENT_ALIGN);
 	.text : {
 		TEXT_TEXT
 		SCHED_TEXT
@@ -38,11 +49,12 @@ SECTIONS
 		*(.fixup)
 		*(.gnu.warning)
 	} :text = 0
+	. = ALIGN(PECOFF_SEGMENT_ALIGN);
 	_etext = .;
 
 	EXCEPTION_TABLE(16)
 
-	. = ALIGN(PAGE_SIZE);
+	. = ALIGN(PECOFF_SEGMENT_ALIGN);
 	__init_begin = .;
 	__inittext_begin = .;
 
@@ -51,6 +63,7 @@ SECTIONS
 		EXIT_TEXT
 	}
 
+	. = ALIGN(PECOFF_SEGMENT_ALIGN);
 	__inittext_end = .;
 
 	__initdata_begin = .;
@@ -60,6 +73,10 @@ SECTIONS
 		EXIT_DATA
 	}
 
+	.init.bss : {
+		*(.init.bss)
+	}
+	. = ALIGN(PECOFF_SEGMENT_ALIGN);
 	__initdata_end = .;
 
 	__init_end = .;
@@ -71,11 +88,11 @@ SECTIONS
 	.sdata : {
 		*(.sdata)
 	}
-
-	. = ALIGN(SZ_64K);
+	.edata_padding : { BYTE(0); . = ALIGN(PECOFF_FILE_ALIGN); }
 	_edata =  .;
 
 	BSS_SECTION(0, SZ_64K, 8)
+	. = ALIGN(PECOFF_SEGMENT_ALIGN);
 
 	_end = .;
 
